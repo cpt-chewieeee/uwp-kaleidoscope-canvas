@@ -6,7 +6,22 @@
 
 	var app = WinJS.Application;
 	var activation = Windows.ApplicationModel.Activation;
-	var isFirstActivation = true;
+    var isFirstActivation = true;
+
+    var canvas;
+    var guide;
+    var ctx;
+   
+    var guideCtx;
+    var ctxprops = {};
+    var cursor = {};
+    var currentpoint;
+    var kaleido = true;
+    var segments = 16;
+    var strokemultiplier = 5;
+    var bgcolour = "#FFF";
+    var r = 360 / segments * Math.PI / 180;
+
 
 	app.onactivated = function (args) {
 		if (args.detail.kind === activation.ActivationKind.voiceCommand) {
@@ -38,7 +53,68 @@
 		if (isFirstActivation) {
 			// TODO: The app was activated and had not been running. Do general startup initialization here.
 			document.addEventListener("visibilitychange", onVisibilityChanged);
-			args.setPromise(WinJS.UI.processAll());
+            args.setPromise(WinJS.UI.processAll().then(function () {
+                canvas = document.getElementById("canvas");
+                ctx = canvas.getContext("2d");
+                ctx.lineCap = "round";
+                canvas.setAttribute("width", document.body.clientWidth);
+                canvas.setAttribute("height", document.body.clientHeight);
+
+                function render() {
+                    for (var i = 0; i < segments; ++i) {
+                        ctx.save();
+                        ctx.translate(document.body.clientWidth / 2, document.body.clientHeight / 2);
+                        ctx.rotate(r * i);
+
+                        if (segments % 2 === 2 && i > 0 && i % 2 !== 0) {
+                            ctx.scale(1, -1);
+                            if (segments % 4 === 0) {
+                                ctx.rotate(r);
+                            }
+                        }
+                        ctx.beginPath();
+                        ctx.moveTo(cursor.lx - document.body.clientWidth / 2, cursor.ly - document.body.clientHeight / 2);
+                        ctx.lineTo(cursor.x - document.body.clientWidth / 2, cursor.y - document.body.clientHeight / 2);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                }
+
+                function onMove (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+
+                        
+                    ctx.lineWidth = strokemultiplier;
+                     
+                    cursor.x = e.clientX;
+                    cursor.y = e.clientY;
+                       
+
+                    render();
+
+                    cursor.lx = cursor.x;
+                    cursor.ly = cursor.y;
+                    
+                }
+                function onUp(e) {
+                    document.removeEventListener("mouseup", onUp);
+                    document.removeEventListener("mousemove", onMove);
+                }
+                canvas.addEventListener("mousedown", function (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    // if (currentpoint) return;
+                    currentpoint = 1
+                    document.addEventListener("mousemove", onMove);
+                    document.addEventListener("mouseup", onUp); 
+
+                    cursor.x = cursor.lx = e.clientX;
+                    cursor.y = cursor.ly = e.clientY;
+
+                });
+
+            }));
 		}
 
 		isFirstActivation = false;
