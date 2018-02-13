@@ -105,7 +105,7 @@
                     e.stopPropagation();
                     e.preventDefault();
                     // if (currentpoint) return;
-                    currentpoint = 1
+                    currentpoint = 1;
                     document.addEventListener("mousemove", onMove);
                     document.addEventListener("mouseup", onUp); 
 
